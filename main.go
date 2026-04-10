@@ -61,6 +61,8 @@ func main() {
 		NDAYS:           NDAYS,
 	}
 
+	log.Printf("Config: quoteServiceURL=%s serveAddr=%s oltpEndpoint=%s function=%s symbol=%s NDAYS=%d",
+		cfg.quoteServiceURL, cfg.serveAddr, cfg.oltpEndpoint, cfg.function, cfg.symbol, cfg.NDAYS)
 	server := NewServer(cfg)
 	server.serve()
 }
@@ -171,9 +173,8 @@ func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 	reqUrl := fmt.Sprintf(
 		"%s?apikey=%s&function=%s&symbol=%s",
 		s.cfg.quoteServiceURL, s.cfg.apiKey, s.cfg.function, s.cfg.symbol)
-	/* Need to sanitize / remove the apikey
-	log.Printf("Fetching data from URL: %s", reqUrl)
-	*/
+	log.Printf("DEBUG: Fetching data from %s?apikey=REDACTED&function=%s&symbol=%s",
+		s.cfg.quoteServiceURL, s.cfg.function, s.cfg.symbol)
 	response, err := http.Get(reqUrl)
 	if err != nil {
 		log.Printf("ERROR: Failed to fetch data, GET failed: %v", err)
@@ -192,6 +193,7 @@ func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to read response", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("DEBUG: Received %d bytes from upstream", len(responseData))
 	// FOR TESTING: read sample-reply.json instead of fetching from API
 	/*
 		responseData, err := os.ReadFile("sample-reply.json")
@@ -208,6 +210,7 @@ func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to unmarshal response", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("DEBUG: Parsed %d time series entries for %s", len(responseObject.TimeSeries), responseObject.MetaData.Symbol)
 	var stResponseObject StockTickerAPIResponse
 	stResponseObject.MetaData = StockTickerAPIMetaData{
 		NDAYS:         strconv.Itoa(s.cfg.NDAYS),
@@ -247,5 +250,6 @@ func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("DEBUG: Sending %d bytes to client", len(stResponseData))
 	w.Write(stResponseData)
 }
