@@ -2,11 +2,21 @@
     "Meta Data": {
         "1. Information": "Daily Time Series with Splits and Dividend Events",
         "2. Symbol": "MSFT",
-        "3. Last Refreshed": "2026-04-09",
+        "3. Last Refreshed": "2026-04-10",
         "4. Output Size": "Compact",
         "5. Time Zone": "US/Eastern"
     },
     "Time Series (Daily)": {
+        "2026-04-10": {
+            "1. open": "373.07",
+            "2. high": "375.64",
+            "3. low": "370.03",
+            "4. close": "370.87",
+            "5. adjusted close": "370.87",
+            "6. volume": "28025463",
+            "7. dividend amount": "0.0000",
+            "8. split coefficient": "1.0"
+        },
         "2026-04-09": {
             "1. open": "372.5",
             "2. high": "373.5",
@@ -994,16 +1004,6 @@
             "4. close": "510.18",
             "5. adjusted close": "508.051168496691",
             "6. volume": "28505746",
-            "7. dividend amount": "0.0000",
-            "8. split coefficient": "1.0"
-        },
-        "2025-11-13": {
-            "1. open": "510.31",
-            "2. high": "513.5",
-            "3. low": "501.29",
-            "4. close": "503.29",
-            "5. adjusted close": "501.189918445842",
-            "6. volume": "25273114",
             "7. dividend amount": "0.0000",
             "8. split coefficient": "1.0"
         }
