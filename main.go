@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"maps"
 	"net/http"
@@ -170,34 +171,36 @@ func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 	reqUrl := fmt.Sprintf(
 		"%s?apikey=%s&function=%s&symbol=%s",
 		s.cfg.quoteServiceURL, s.cfg.apiKey, s.cfg.function, s.cfg.symbol)
+	/* Need to sanitize / remove the apikey
 	log.Printf("Fetching data from URL: %s", reqUrl)
+	*/
+	response, err := http.Get(reqUrl)
+	if err != nil {
+		log.Printf("ERROR: Failed to fetch data, GET failed: %v", err)
+		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
+		return
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		log.Printf("ERROR: Failed to fetch data, status code: %d", response.StatusCode)
+		http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
+		return
+	}
+	responseData, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("ERROR: Failed to read response: %v", err)
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+	// FOR TESTING: read sample-reply.json instead of fetching from API
 	/*
-		response, err := http.Get(reqUrl)
+		responseData, err := os.ReadFile("sample-reply.json")
 		if err != nil {
-			log.Printf("ERROR: Failed to fetch data, GET failed: %v", err)
-			http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
-			return
-		}
-		defer response.Body.Close()
-		if response.StatusCode != http.StatusOK {
-			log.Printf("ERROR: Failed to fetch data, status code: %d", response.StatusCode)
-			http.Error(w, "Failed to fetch data", http.StatusInternalServerError)
-			return
-		}
-		responseData, err := io.ReadAll(response.Body)
-		if err != nil {
-			log.Printf("ERROR: Failed to read response: %v", err)
-			http.Error(w, "Failed to read response", http.StatusInternalServerError)
+			log.Printf("ERROR: Failed to read sample-reply.json: %v", err)
+			http.Error(w, "Failed to read sample data", http.StatusInternalServerError)
 			return
 		}
 	*/
-	// FOR TESTING: read sample-reply.json instead of fetching from API
-	responseData, err := os.ReadFile("sample-reply.json")
-	if err != nil {
-		log.Printf("ERROR: Failed to read sample-reply.json: %v", err)
-		http.Error(w, "Failed to read sample data", http.StatusInternalServerError)
-		return
-	}
 	// Now process the received data
 	var responseObject DailyAdjustedResponse
 	if err := json.Unmarshal(responseData, &responseObject); err != nil {
