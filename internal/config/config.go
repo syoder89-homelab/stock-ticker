@@ -14,6 +14,7 @@ type Config struct {
 	Function        string
 	Symbol          string
 	NDays           int
+	LogLevel        string
 }
 
 func LoadFromEnv() Config {
@@ -25,6 +26,7 @@ func LoadFromEnv() Config {
 		Function:        "TIME_SERIES_DAILY",
 		Symbol:          "MSFT",
 		NDays:           7,
+		LogLevel:        "DEBUG",
 	}
 
 	if v := os.Getenv("QUOTE_SERVICE_URL"); v != "" {
@@ -50,9 +52,12 @@ func LoadFromEnv() Config {
 			cfg.NDays = n
 		}
 	}
+	if v := os.Getenv("LOG_LEVEL"); v != "" {
+		cfg.LogLevel = v
+	}
 
-	log.Printf("Config: quoteServiceURL=%s serveAddr=%s otlpEndpoint=%s function=%s symbol=%s NDays=%d",
-		cfg.QuoteServiceURL, cfg.ServeAddr, cfg.OTLPEndpoint, cfg.Function, cfg.Symbol, cfg.NDays)
+	log.Printf("Config: quoteServiceURL=%s serveAddr=%s otlpEndpoint=%s function=%s symbol=%s NDays=%d logLevel=%s",
+		cfg.QuoteServiceURL, cfg.ServeAddr, cfg.OTLPEndpoint, cfg.Function, cfg.Symbol, cfg.NDays, cfg.LogLevel)
 
 	return cfg
 }

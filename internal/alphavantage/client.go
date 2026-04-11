@@ -4,27 +4,29 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
 type Client struct {
 	baseURL string
 	apiKey  string
+	log     *slog.Logger
 }
 
-func NewClient(baseURL, apiKey string) *Client {
+func NewClient(baseURL, apiKey string, log *slog.Logger) *Client {
 	return &Client{
 		baseURL: baseURL,
 		apiKey:  apiKey,
+		log:     log,
 	}
 }
 
 func (c *Client) FetchDailyTimeSeries(function, symbol string) (*DailyTSResponse, error) {
 	reqURL := fmt.Sprintf("%s?apikey=%s&function=%s&symbol=%s",
 		c.baseURL, c.apiKey, function, symbol)
-	log.Printf("DEBUG: Fetching data from %s?apikey=REDACTED&function=%s&symbol=%s",
-		c.baseURL, function, symbol)
+	c.log.Debug("Fetching data from upstream",
+		"url", c.baseURL, "function", function, "symbol", symbol)
 
 	resp, err := http.Get(reqURL)
 	if err != nil {
@@ -40,14 +42,14 @@ func (c *Client) FetchDailyTimeSeries(function, symbol string) (*DailyTSResponse
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %w", err)
 	}
-	log.Printf("DEBUG: Received %d bytes from upstream", len(body))
+	c.log.Debug("Received upstream response", "bytes", len(body))
 
 	var result DailyTSResponse
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("unmarshaling response: %w", err)
 	}
 
-	log.Printf("DEBUG: Parsed %d time series entries for %s", len(result.TimeSeries), symbol)
+	c.log.Debug("Parsed time series entries", "count", len(result.TimeSeries), "symbol", symbol)
 
 	if len(result.TimeSeries) == 0 {
 		return nil, fmt.Errorf("upstream returned no time series data, raw response: %s", string(body))
