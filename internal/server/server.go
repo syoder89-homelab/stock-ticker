@@ -1,7 +1,7 @@
 package server
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"sync/atomic"
 
@@ -11,14 +11,16 @@ import (
 type Server struct {
 	addr      string
 	v1Handler *v1.Handler
+	log       *slog.Logger
 	started   atomic.Bool
 	ready     atomic.Bool
 }
 
-func New(addr string, v1Handler *v1.Handler) *Server {
+func New(addr string, v1Handler *v1.Handler, log *slog.Logger) *Server {
 	return &Server{
 		addr:      addr,
 		v1Handler: v1Handler,
+		log:       log,
 	}
 }
 
@@ -59,6 +61,6 @@ func (s *Server) Serve() error {
 	}
 	s.started.Store(true)
 	s.ready.Store(true)
-	log.Printf("Server listening on %s", s.addr)
+	s.log.Info("Server listening", "addr", s.addr)
 	return srv.ListenAndServe()
 }

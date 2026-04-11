@@ -4,7 +4,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"maps"
 	"net/http"
 	"slices"
@@ -15,6 +15,7 @@ import (
 
 type Handler struct {
 	Client   *alphavantage.Client
+	Log      *slog.Logger
 	Function string
 	Symbol   string
 	NDays    int
@@ -25,7 +26,7 @@ func (h *Handler) GetTicker(w http.ResponseWriter, r *http.Request) {
 
 	data, err := h.Client.FetchDailyTimeSeries(h.Function, h.Symbol)
 	if err != nil {
-		log.Printf("ERROR: %v", err)
+		h.Log.Error("Failed to fetch upstream data", "error", err)
 		http.Error(w, "Failed to fetch upstream data", http.StatusBadGateway)
 		return
 	}
@@ -44,7 +45,7 @@ func (h *Handler) GetTicker(w http.ResponseWriter, r *http.Request) {
 		ts[k] = data.TimeSeries[k]
 		closeValue, err := strconv.ParseFloat(data.TimeSeries[k].Close, 64)
 		if err != nil {
-			log.Printf("ERROR: Failed to parse close value: %v", err)
+			h.Log.Error("Failed to parse close value", "key", k, "error", err)
 			http.Error(w, "Failed to parse close value", http.StatusInternalServerError)
 			return
 		}
@@ -67,10 +68,10 @@ func (h *Handler) GetTicker(w http.ResponseWriter, r *http.Request) {
 
 	out, err := json.Marshal(resp)
 	if err != nil {
-		log.Printf("ERROR: Failed to marshal response: %v", err)
+		h.Log.Error("Failed to marshal response", "error", err)
 		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("DEBUG: Sending %d bytes to client", len(out))
+	h.Log.Debug("Sending response to client", "bytes", len(out))
 	w.Write(out)
 }
