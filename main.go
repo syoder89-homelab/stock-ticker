@@ -169,6 +169,7 @@ func (s *Server) serve() {
 }
 
 func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	// apikey=demo&function=TIME_SERIES_DAILY_ADJUSTED&symbol=MSFT
 	reqUrl := fmt.Sprintf(
 		"%s?apikey=%s&function=%s&symbol=%s",
@@ -210,11 +211,21 @@ func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to unmarshal response", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("DEBUG: Parsed %d time series entries for %s", len(responseObject.TimeSeries), responseObject.MetaData.Symbol)
+	log.Printf("DEBUG: Parsed %d time series entries for %s", len(responseObject.TimeSeries), s.cfg.symbol)
+	if len(responseObject.TimeSeries) == 0 {
+		log.Printf("ERROR: Upstream returned no time series data. Raw response: %s", string(responseData))
+		http.Error(w, "Upstream returned no data", http.StatusBadGateway)
+		return
+	}
+	if responseObject.MetaData.Symbol != s.cfg.symbol {
+		log.Printf("ERROR: Symbol mismatch: expected %s, got %s", s.cfg.symbol, responseObject.MetaData.Symbol)
+		http.Error(w, "Symbol mismatch in upstream response", http.StatusBadGateway)
+		return
+	}
 	var stResponseObject StockTickerAPIResponse
 	stResponseObject.MetaData = StockTickerAPIMetaData{
 		NDAYS:         strconv.Itoa(s.cfg.NDAYS),
-		Symbol:        responseObject.MetaData.Symbol,
+		Symbol:        s.cfg.symbol,
 		LastRefreshed: responseObject.MetaData.LastRefreshed,
 		TimeZone:      responseObject.MetaData.TimeZone,
 	}
@@ -243,7 +254,6 @@ func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 	}
 	stResponseObject.DailyAverage = fmt.Sprintf("%.2f", dailyAverage)
 
-	w.Header().Set("Content-Type", "application/json")
 	stResponseData, err := json.Marshal(stResponseObject)
 	if err != nil {
 		log.Printf("ERROR: Failed to marshal response: %v", err)
