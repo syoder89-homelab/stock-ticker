@@ -56,7 +56,7 @@ func (h *Handler) GetTicker(w http.ResponseWriter, r *http.Request) {
 
 	resp := TickerResponse{
 		MetaData: TickerMetaData{
-			NDays:         strconv.Itoa(h.NDays),
+			NDays:         strconv.Itoa(ndays),
 			Symbol:        h.Symbol,
 			LastRefreshed: data.MetaData.LastRefreshed,
 			TimeZone:      data.MetaData.TimeZone,
