@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stock-ticker
+  namespace: stock-ticker
+  labels:
+    app: stock-ticker
+data:
+  SYMBOL: "MSFT"
+  NDAYS: "7"

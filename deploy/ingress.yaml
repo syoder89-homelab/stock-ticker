@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stock-ticker
+  namespace: stock-ticker
+  labels:
+    app: stock-ticker
+spec:
+  rules:
+  - host: stock-ticker.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: stock-ticker
+            port:
+              number: 8080
