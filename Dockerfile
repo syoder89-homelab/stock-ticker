@@ -3,11 +3,11 @@
 FROM golang:1.25-alpine AS builder
 
 WORKDIR /build
-COPY go.mod ./
+COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 RUN go test ./...
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app ./cmd/stock-ticker
 
 # Use distroless image for SSL certs
 FROM gcr.io/distroless/static-debian12
