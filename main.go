@@ -34,7 +34,7 @@ func main() {
 		otlpEndpoint = v
 	}
 
-	function := "TIME_SERIES_DAILY_ADJUSTED"
+	function := "TIME_SERIES_DAILY"
 	if v := os.Getenv("FUNCTION"); v != "" {
 		function = v
 	}
@@ -96,7 +96,7 @@ type StockTickerAPIResponse struct {
 	TimeSeries   map[string]DailyDataPoint `json:"Time Series (Daily)"`
 }
 
-type DailyAdjustedResponse struct {
+type DailyTSResponse struct {
 	MetaData   MetaData                  `json:"Meta Data"`
 	TimeSeries map[string]DailyDataPoint `json:"Time Series (Daily)"`
 }
@@ -110,6 +110,14 @@ type MetaData struct {
 }
 
 type DailyDataPoint struct {
+	Open   string `json:"1. open"`
+	High   string `json:"2. high"`
+	Low    string `json:"3. low"`
+	Close  string `json:"4. close"`
+	Volume string `json:"5. volume"`
+}
+
+type DailyDataPointAdjusted struct {
 	Open             string `json:"1. open"`
 	High             string `json:"2. high"`
 	Low              string `json:"3. low"`
@@ -205,7 +213,7 @@ func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 		}
 	*/
 	// Now process the received data
-	var responseObject DailyAdjustedResponse
+	var responseObject DailyTSResponse
 	if err := json.Unmarshal(responseData, &responseObject); err != nil {
 		log.Printf("ERROR: Failed to unmarshal response: %v", err)
 		http.Error(w, "Failed to unmarshal response", http.StatusInternalServerError)
@@ -241,7 +249,7 @@ func (s *Server) getData(w http.ResponseWriter, r *http.Request) {
 	var dailyAverage float64 = 0
 	for _, k := range keys[:ndays] {
 		stResponseObject.TimeSeries[k] = responseObject.TimeSeries[k]
-		closeValue, err := strconv.ParseFloat(responseObject.TimeSeries[k].AdjustedClose, 64)
+		closeValue, err := strconv.ParseFloat(responseObject.TimeSeries[k].Close, 64)
 		if err != nil {
 			log.Printf("ERROR: Failed to parse close value: %v", err)
 			http.Error(w, "Failed to parse close value", http.StatusInternalServerError)
