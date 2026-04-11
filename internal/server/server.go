@@ -6,20 +6,23 @@ import (
 	"sync/atomic"
 
 	v1 "stock-ticker/internal/api/v1"
+	"stock-ticker/internal/metrics"
 )
 
 type Server struct {
 	addr      string
 	v1Handler *v1.Handler
+	metrics   *metrics.Metrics
 	log       *slog.Logger
 	started   atomic.Bool
 	ready     atomic.Bool
 }
 
-func New(addr string, v1Handler *v1.Handler, log *slog.Logger) *Server {
+func New(addr string, v1Handler *v1.Handler, metrics *metrics.Metrics, log *slog.Logger) *Server {
 	return &Server{
 		addr:      addr,
 		v1Handler: v1Handler,
+		metrics:   metrics,
 		log:       log,
 	}
 }
@@ -43,6 +46,9 @@ func (s *Server) buildMux() *http.ServeMux {
 		}
 		w.WriteHeader(http.StatusOK)
 	})
+	if s.metrics != nil {
+		mux.Handle("/metrics", s.metrics.Handler())
+	}
 	mux.HandleFunc("/api/v1/ticker", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			w.Header().Set("Allow", "GET")

@@ -12,6 +12,7 @@ A Go service that fetches stock price data from the [Alpha Vantage API](https://
 | `GET /healthz` | Liveness probe |
 | `GET /readyz` | Readiness probe |
 | `GET /startupz` | Startup probe |
+| `GET /metrics` | Prometheus metrics endpoint |
 
 ## Configuration
 
@@ -45,6 +46,19 @@ export API_KEY="your-alpha-vantage-key"
 go run ./cmd/stock-ticker
 # → http://localhost:8080/api/v1/ticker
 ```
+
+## Metrics
+
+The service exposes Prometheus metrics at `GET /metrics`.
+
+Custom metrics include:
+
+- `stock_ticker_ticker_requests_total`
+- `stock_ticker_ticker_request_duration_seconds`
+- `stock_ticker_ticker_errors_total`
+- `stock_ticker_upstream_requests_total`
+- `stock_ticker_upstream_request_duration_seconds`
+- `stock_ticker_upstream_errors_total`
 
 ## Deploying to Kubernetes
 
