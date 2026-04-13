@@ -126,3 +126,38 @@ Basic manifests are in the [`deploy/`](deploy/) directory:
 - **Change the stock symbol or history window:** Edit `deploy/configmap.yaml` and re-apply.
 - **Use a different image tag:** Update the `image:` field in `deploy/deployment.yaml`.
 - **Configure ingress:** Edit the `host` in `deploy/ingress.yaml` to match your domain. Add `ingressClassName` or annotations as needed for your ingress controller.
+
+### Prometheus Metrics
+
+The deployment includes standard Prometheus scrape annotations on the pod template:
+
+```yaml
+annotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+```
+
+This works out of the box with Prometheus instances configured to use annotation-based service discovery.
+
+If you are using the **Prometheus Operator**, create a `ServiceMonitor` instead:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: stock-ticker
+  namespace: stock-ticker
+  labels:
+    app: stock-ticker
+spec:
+  selector:
+    matchLabels:
+      app: stock-ticker
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+```
+
+Apply it alongside the other manifests. Ensure your Prometheus Operator is configured to select `ServiceMonitor` resources from the `stock-ticker` namespace (via `serviceMonitorNamespaceSelector` or a cluster-wide configuration).
