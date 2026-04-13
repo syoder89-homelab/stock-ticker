@@ -21,6 +21,19 @@ type Handler struct {
 	NDays    int
 }
 
+type TickerResponse struct {
+	MetaData     TickerMetaData                         `json:"Meta Data"`
+	DailyAverage string                                 `json:"Daily Average"`
+	TimeSeries   map[string]alphavantage.DailyDataPoint `json:"Time Series (Daily)"`
+}
+
+type TickerMetaData struct {
+	NDays         string `json:"NDAYS"`
+	Symbol        string `json:"Symbol"`
+	LastRefreshed string `json:"Last Refreshed"`
+	TimeZone      string `json:"Time Zone"`
+}
+
 func (h *Handler) GetTicker(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
