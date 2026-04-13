@@ -130,7 +130,7 @@ Basic manifests are in the [`deploy/k8s/`](deploy/k8s/) directory:
 
 ### Helm
 
-A Helm chart used for the production deployment is in [`deploy/helm/`](deploy/helm/). This is a copy of the chart deployed via [homelab-apps](https://github.com/syoder89/homelab-apps).
+A Helm chart used for the production deployment is in [`deploy/helm/`](deploy/helm/). This is a copy of the chart deployed via [homelab-apps](https://github.com/syoder89-homelab/homelab-apps).
 
 ### Customization
 
