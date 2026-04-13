@@ -19,7 +19,11 @@ var (
 func main() {
 	cfg := config.LoadFromEnv()
 	logger := logging.New(cfg.LogLevel)
-	appMetrics := metrics.New(version, commit)
+
+	var appMetrics *metrics.Metrics
+	if !cfg.DisableMetrics {
+		appMetrics = metrics.New(version, commit)
+	}
 
 	client := alphavantage.NewClient(cfg.QuoteServiceURL, cfg.APIKey, logger, appMetrics)
 

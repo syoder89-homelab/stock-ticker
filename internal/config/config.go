@@ -15,6 +15,7 @@ type Config struct {
 	Symbol          string
 	NDays           int
 	LogLevel        string
+	DisableMetrics  bool
 }
 
 func LoadFromEnv() Config {
@@ -55,9 +56,12 @@ func LoadFromEnv() Config {
 	if v := os.Getenv("LOG_LEVEL"); v != "" {
 		cfg.LogLevel = v
 	}
+	if v := os.Getenv("DISABLE_METRICS"); v == "true" || v == "1" {
+		cfg.DisableMetrics = true
+	}
 
-	log.Printf("Config: quoteServiceURL=%s serveAddr=%s otlpEndpoint=%s function=%s symbol=%s NDays=%d logLevel=%s",
-		cfg.QuoteServiceURL, cfg.ServeAddr, cfg.OTLPEndpoint, cfg.Function, cfg.Symbol, cfg.NDays, cfg.LogLevel)
+	log.Printf("Config: quoteServiceURL=%s serveAddr=%s otlpEndpoint=%s function=%s symbol=%s NDays=%d logLevel=%s disableMetrics=%v",
+		cfg.QuoteServiceURL, cfg.ServeAddr, cfg.OTLPEndpoint, cfg.Function, cfg.Symbol, cfg.NDays, cfg.LogLevel, cfg.DisableMetrics)
 
 	return cfg
 }

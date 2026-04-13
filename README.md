@@ -27,6 +27,7 @@ All configuration is via environment variables:
 | `QUOTE_SERVICE_URL` | `https://www.alphavantage.co/query` | Alpha Vantage endpoint |
 | `FUNCTION` | `TIME_SERIES_DAILY` | API function |
 | `LOG_LEVEL` | `DEBUG` | Log level (DEBUG, INFO, WARN, ERROR) |
+| `DISABLE_METRICS` | _(empty)_ | Set to `true` or `1` to disable Prometheus metrics |
 | `OTLP_ENDPOINT` | _(empty)_ | OpenTelemetry collector endpoint |
 
 ## Building
