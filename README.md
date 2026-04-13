@@ -64,6 +64,13 @@ API_KEY="your-alpha-vantage-key" go test -tags=integration ./...
 
 The integration test is excluded from default test runs so normal development and CI do not consume the Alpha Vantage daily quota.
 
+## CI/CD
+
+A GitHub Actions workflow ([`.github/workflows/built-test-push.yml`](.github/workflows/built-test-push.yml)) runs on every push and PR to `main`:
+
+1. **Build** — Builds the Docker image (includes `go test` inside the Dockerfile) and injects version/commit via build args. Runs on all pushes and PRs.
+2. **Push** — On merge to `main` only, authenticates to GCP via Workload Identity Federation and pushes the image to Google Artifact Registry. Images are tagged `YYYYMMDD-<short sha>`.
+
 ## Metrics
 
 The service exposes Prometheus metrics at `GET /metrics`.
@@ -79,7 +86,7 @@ Custom metrics include:
 
 ## Deploying to Kubernetes
 
-Basic manifests are in the [`deploy/`](deploy/) directory:
+Basic manifests are in the [`deploy/k8s/`](deploy/k8s/) directory:
 
 | File | Resource | Purpose |
 |---|---|---|
@@ -95,8 +102,7 @@ Basic manifests are in the [`deploy/`](deploy/) directory:
 1. **Set your API key** in the secret manifest before applying:
 
    ```bash
-   # Edit deploy/secret.yaml and replace "demo" with your real Alpha Vantage API key,
-   # or create the secret imperatively:
+   # Create the api key secret imperatively with your real Alpha Vantage API key:
    kubectl create namespace stock-ticker
    kubectl -n stock-ticker create secret generic stock-ticker-api-key \
      --from-literal=API_KEY=your-key-here
@@ -105,7 +111,7 @@ Basic manifests are in the [`deploy/`](deploy/) directory:
 2. **Apply all manifests:**
 
    ```bash
-   kubectl apply -f deploy/
+   kubectl apply -f deploy/k8s/
    ```
 
 3. **Verify the deployment:**
@@ -122,11 +128,15 @@ Basic manifests are in the [`deploy/`](deploy/) directory:
    curl http://localhost:8080/api/v1/ticker
    ```
 
+### Helm
+
+A Helm chart used for the production deployment is in [`deploy/helm/`](deploy/helm/). This is a copy of the chart deployed via [homelab-apps](https://github.com/syoder89/homelab-apps).
+
 ### Customization
 
-- **Change the stock symbol or history window:** Edit `deploy/configmap.yaml` and re-apply.
-- **Use a different image tag:** Update the `image:` field in `deploy/deployment.yaml`.
-- **Configure ingress:** Edit the `host` in `deploy/ingress.yaml` to match your domain. Add `ingressClassName` or annotations as needed for your ingress controller.
+- **Change the stock symbol or history window:** Edit `deploy/k8s/configmap.yaml` and re-apply.
+- **Use a different image tag:** Update the `image:` field in `deploy/k8s/deployment.yaml`.
+- **Configure ingress:** Edit the `host` in `deploy/k8s/ingress.yaml` to match your domain. Add `ingressClassName` or annotations as needed for your ingress controller.
 
 ### Prometheus Metrics
 

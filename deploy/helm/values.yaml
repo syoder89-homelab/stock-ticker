@@ -1,0 +1,37 @@
+image:
+  repository: us-central1-docker.pkg.dev/personal-356214/stock-ticker/stock-ticker
+  tag: latest
+
+strategy:
+  maxUnavailable: 0
+  maxSurge: 1
+
+securityContext:
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+
+symbol: MSFT
+ndays: "7"
+apiCredentialsItemName: stock-ticker-api-credentials
+otlpEndpoint: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  host: stock-ticker.example.com
+  path: /
+  pathType: Prefix
+  tls: []
+
+resources:
+  requests:
+    cpu: 8m
+    memory: 32Mi
+  limits:
+    memory: 32Mi
