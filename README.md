@@ -12,6 +12,7 @@ A Go service that fetches stock price data from the [Alpha Vantage API](https://
 | `GET /healthz` | Liveness probe |
 | `GET /readyz` | Readiness probe |
 | `GET /startupz` | Startup probe |
+| `GET /metrics` | Prometheus metrics endpoint |
 
 ## Configuration
 
@@ -26,16 +27,21 @@ All configuration is via environment variables:
 | `QUOTE_SERVICE_URL` | `https://www.alphavantage.co/query` | Alpha Vantage endpoint |
 | `FUNCTION` | `TIME_SERIES_DAILY` | API function |
 | `LOG_LEVEL` | `DEBUG` | Log level (DEBUG, INFO, WARN, ERROR) |
+| `DISABLE_METRICS` | _(empty)_ | Set to `true` or `1` to disable Prometheus metrics |
 | `OTLP_ENDPOINT` | _(empty)_ | OpenTelemetry collector endpoint |
 
 ## Building
 
 ```bash
 # Build locally
-go build -o stock-ticker ./cmd/stock-ticker
+go build -ldflags "-X main.version=dev -X main.commit=$(git rev-parse --short HEAD)" \
+    -o stock-ticker ./cmd/stock-ticker
 
 # Build container image
-docker build -t stock-ticker .
+docker build \
+    --build-arg VERSION=dev \
+    --build-arg COMMIT=$(git rev-parse --short HEAD) \
+    -t stock-ticker .
 ```
 
 ## Running Locally
@@ -57,6 +63,19 @@ API_KEY="your-alpha-vantage-key" go test -tags=integration ./...
 ```
 
 The integration test is excluded from default test runs so normal development and CI do not consume the Alpha Vantage daily quota.
+
+## Metrics
+
+The service exposes Prometheus metrics at `GET /metrics`.
+
+Custom metrics include:
+
+- `stock_ticker_ticker_requests_total`
+- `stock_ticker_ticker_request_duration_seconds`
+- `stock_ticker_ticker_errors_total`
+- `stock_ticker_upstream_requests_total`
+- `stock_ticker_upstream_request_duration_seconds`
+- `stock_ticker_upstream_errors_total`
 
 ## Deploying to Kubernetes
 
@@ -108,3 +127,38 @@ Basic manifests are in the [`deploy/`](deploy/) directory:
 - **Change the stock symbol or history window:** Edit `deploy/configmap.yaml` and re-apply.
 - **Use a different image tag:** Update the `image:` field in `deploy/deployment.yaml`.
 - **Configure ingress:** Edit the `host` in `deploy/ingress.yaml` to match your domain. Add `ingressClassName` or annotations as needed for your ingress controller.
+
+### Prometheus Metrics
+
+The deployment includes standard Prometheus scrape annotations on the pod template:
+
+```yaml
+annotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+```
+
+This works out of the box with Prometheus instances configured to use annotation-based service discovery.
+
+If you are using the **Prometheus Operator**, create a `ServiceMonitor` instead:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: stock-ticker
+  namespace: stock-ticker
+  labels:
+    app: stock-ticker
+spec:
+  selector:
+    matchLabels:
+      app: stock-ticker
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+```
+
+Apply it alongside the other manifests. Ensure your Prometheus Operator is configured to select `ServiceMonitor` resources from the `stock-ticker` namespace (via `serviceMonitorNamespaceSelector` or a cluster-wide configuration).

@@ -19,6 +19,9 @@ jobs:
         with:
           context: .
           push: false
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            COMMIT=${{ github.sha }}
 
   push:
     name: Push
@@ -57,3 +60,6 @@ jobs:
           context: .
           push: true
           tags: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/stock-ticker/stock-ticker:${{ steps.tag.outputs.tag }}
+          build-args: |
+            VERSION=${{ steps.tag.outputs.tag }}
+            COMMIT=${{ github.sha }}

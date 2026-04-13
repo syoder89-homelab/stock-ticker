@@ -11,6 +11,7 @@ func TestLoadFromEnvDefaults(t *testing.T) {
 	t.Setenv("SYMBOL", "")
 	t.Setenv("NDAYS", "")
 	t.Setenv("LOG_LEVEL", "")
+	t.Setenv("DISABLE_METRICS", "")
 
 	cfg := LoadFromEnv()
 
@@ -35,6 +36,9 @@ func TestLoadFromEnvDefaults(t *testing.T) {
 	if cfg.LogLevel != "DEBUG" {
 		t.Fatalf("unexpected LogLevel: %q", cfg.LogLevel)
 	}
+	if cfg.DisableMetrics != false {
+		t.Fatal("expected DisableMetrics to be false by default")
+	}
 }
 
 func TestLoadFromEnvOverrides(t *testing.T) {
@@ -46,6 +50,7 @@ func TestLoadFromEnvOverrides(t *testing.T) {
 	t.Setenv("SYMBOL", "AAPL")
 	t.Setenv("NDAYS", "30")
 	t.Setenv("LOG_LEVEL", "INFO")
+	t.Setenv("DISABLE_METRICS", "true")
 
 	cfg := LoadFromEnv()
 
@@ -72,6 +77,9 @@ func TestLoadFromEnvOverrides(t *testing.T) {
 	}
 	if cfg.LogLevel != "INFO" {
 		t.Fatalf("unexpected LogLevel: %q", cfg.LogLevel)
+	}
+	if cfg.DisableMetrics != true {
+		t.Fatal("expected DisableMetrics to be true")
 	}
 }
 
