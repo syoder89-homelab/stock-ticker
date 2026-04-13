@@ -51,6 +51,18 @@ go run ./cmd/stock-ticker
 # → http://localhost:8080/api/v1/ticker
 ```
 
+## Testing
+
+```bash
+# Run unit tests
+go test ./...
+
+# Run the live Alpha Vantage integration test explicitly
+API_KEY="your-alpha-vantage-key" go test -tags=integration ./...
+```
+
+The integration test is excluded from default test runs so normal development and CI do not consume the Alpha Vantage daily quota.
+
 ## Metrics
 
 The service exposes Prometheus metrics at `GET /metrics`.
