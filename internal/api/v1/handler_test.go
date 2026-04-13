@@ -34,7 +34,7 @@ func TestGetTickerRecordsSuccessMetrics(t *testing.T) {
 	}))
 	defer server.Close()
 
-	m := metrics.New()
+	m := metrics.New("test", "test")
 	h := &Handler{
 		Client:   alphavantage.NewClientWithHTTPClient(server.URL, "test-key", logging.New("ERROR"), server.Client(), m),
 		Log:      logging.New("ERROR"),
@@ -60,7 +60,7 @@ func TestGetTickerRecordsSuccessMetrics(t *testing.T) {
 	if resp.DailyAverage != "15.00" {
 		t.Fatalf("expected average 15.00, got %q", resp.DailyAverage)
 	}
-	if got := testutil.ToFloat64(m.TickerRequestsTotal.WithLabelValues("/api/v1/ticker", "200")); got != 1 {
+	if got := testutil.ToFloat64(m.TickerRequestsTotal.WithLabelValues("200")); got != 1 {
 		t.Fatalf("expected ticker request count 1, got %v", got)
 	}
 }
@@ -85,7 +85,7 @@ func TestGetTickerRecordsErrorMetrics(t *testing.T) {
 	}))
 	defer server.Close()
 
-	m := metrics.New()
+	m := metrics.New("test", "test")
 	h := &Handler{
 		Client:   alphavantage.NewClientWithHTTPClient(server.URL, "test-key", logging.New("ERROR"), server.Client(), m),
 		Log:      logging.New("ERROR"),
@@ -103,7 +103,7 @@ func TestGetTickerRecordsErrorMetrics(t *testing.T) {
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("expected status 500, got %d", rec.Code)
 	}
-	if got := testutil.ToFloat64(m.TickerRequestsTotal.WithLabelValues("/api/v1/ticker", "500")); got != 1 {
+	if got := testutil.ToFloat64(m.TickerRequestsTotal.WithLabelValues("500")); got != 1 {
 		t.Fatalf("expected ticker 500 count 1, got %v", got)
 	}
 	if got := testutil.ToFloat64(m.TickerErrorsTotal.WithLabelValues("parse_close_value")); got != 1 {

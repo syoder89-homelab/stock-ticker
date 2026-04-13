@@ -37,7 +37,7 @@ func TestFetchDailyTimeSeriesRecordsSuccessMetrics(t *testing.T) {
 	}))
 	defer server.Close()
 
-	m := metrics.New()
+	m := metrics.New("test", "test")
 	client := NewClientWithHTTPClient(server.URL, "test-key", logging.New("ERROR"), server.Client(), m)
 
 	_, err := client.FetchDailyTimeSeries("TIME_SERIES_DAILY", "MSFT")
@@ -58,7 +58,7 @@ func TestFetchDailyTimeSeriesRecordsErrorMetrics(t *testing.T) {
 	}))
 	defer server.Close()
 
-	m := metrics.New()
+	m := metrics.New("test", "test")
 	client := NewClientWithHTTPClient(server.URL, "test-key", logging.New("ERROR"), server.Client(), m)
 
 	_, err := client.FetchDailyTimeSeries("TIME_SERIES_DAILY", "MSFT")
@@ -66,8 +66,8 @@ func TestFetchDailyTimeSeriesRecordsErrorMetrics(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	if got := testutil.ToFloat64(m.UpstreamRequestsTotal.WithLabelValues("TIME_SERIES_DAILY", "MSFT", "http_429")); got != 1 {
-		t.Fatalf("expected upstream http_429 count 1, got %v", got)
+	if got := testutil.ToFloat64(m.UpstreamRequestsTotal.WithLabelValues("TIME_SERIES_DAILY", "MSFT", "4xx")); got != 1 {
+		t.Fatalf("expected upstream 4xx count 1, got %v", got)
 	}
 	if got := testutil.ToFloat64(m.UpstreamErrorsTotal.WithLabelValues("TIME_SERIES_DAILY", "MSFT", "http_status")); got != 1 {
 		t.Fatalf("expected upstream error count 1, got %v", got)

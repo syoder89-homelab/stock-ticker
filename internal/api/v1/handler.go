@@ -22,23 +22,48 @@ type Handler struct {
 	Function string
 	Symbol   string
 	NDays    int
+	sr       *statusRecorder
+}
+
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (sr *statusRecorder) WriteHeader(code int) {
+	sr.status = code
+	sr.ResponseWriter.WriteHeader(code)
+}
+
+func (h *Handler) beginRequest(w http.ResponseWriter) time.Time {
+	h.sr = &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+	h.sr.Header().Set("Content-Type", "application/json")
+	return time.Now()
+}
+
+func (h *Handler) endRequest(start time.Time) {
+	h.Metrics.ObserveTickerRequest(h.sr.status, time.Since(start))
+}
+
+func (h *Handler) writeJSON(data []byte) {
+	h.Log.Debug("Sending response to client", "bytes", len(data))
+	h.sr.Write(data)
+}
+
+func (h *Handler) httpError(msg string, code int, metricKind string) {
+	h.Log.Error(msg, "status", code)
+	h.Metrics.IncTickerError(metricKind)
+	http.Error(h.sr, msg, code)
 }
 
 func (h *Handler) GetTicker(w http.ResponseWriter, r *http.Request) {
-	statusCode := http.StatusOK
-	start := time.Now()
-	defer func() {
-		h.Metrics.ObserveTickerRequest(statusCode, time.Since(start))
-	}()
-
-	w.Header().Set("Content-Type", "application/json")
+	start := h.beginRequest(w)
+	defer h.endRequest(start)
 
 	data, err := h.Client.FetchDailyTimeSeries(h.Function, h.Symbol)
 	if err != nil {
-		h.Log.Error("Failed to fetch upstream data", "error", err)
-		h.Metrics.IncTickerError("upstream_fetch")
-		statusCode = http.StatusBadGateway
-		http.Error(w, "Failed to fetch upstream data", http.StatusBadGateway)
+		// Note: this isn't really double-counting errors - it's incrementing the ticker_errors_total not upstream_errors_total
+		h.httpError("Failed to fetch upstream data", http.StatusBadGateway, "upstream_fetch")
 		return
 	}
 
@@ -56,10 +81,7 @@ func (h *Handler) GetTicker(w http.ResponseWriter, r *http.Request) {
 		ts[k] = data.TimeSeries[k]
 		closeValue, err := strconv.ParseFloat(data.TimeSeries[k].Close, 64)
 		if err != nil {
-			h.Log.Error("Failed to parse close value", "key", k, "error", err)
-			h.Metrics.IncTickerError("parse_close_value")
-			statusCode = http.StatusInternalServerError
-			http.Error(w, "Failed to parse close value", http.StatusInternalServerError)
+			h.httpError("Failed to parse close value", http.StatusInternalServerError, "parse_close_value")
 			return
 		}
 		dailyAverage += closeValue
@@ -81,12 +103,8 @@ func (h *Handler) GetTicker(w http.ResponseWriter, r *http.Request) {
 
 	out, err := json.Marshal(resp)
 	if err != nil {
-		h.Log.Error("Failed to marshal response", "error", err)
-		h.Metrics.IncTickerError("marshal_response")
-		statusCode = http.StatusInternalServerError
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+		h.httpError("Failed to marshal response", http.StatusInternalServerError, "marshal_response")
 		return
 	}
-	h.Log.Debug("Sending response to client", "bytes", len(out))
-	w.Write(out)
+	h.writeJSON(out)
 }

@@ -10,20 +10,25 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const tickerEndpoint = "/api/v1/ticker"
-
 type Metrics struct {
 	Registry                       *prometheus.Registry
 	TickerRequestsTotal            *prometheus.CounterVec
-	TickerRequestDurationSeconds   *prometheus.HistogramVec
+	TickerRequestDurationSeconds   prometheus.Histogram
 	TickerErrorsTotal              *prometheus.CounterVec
 	UpstreamRequestsTotal          *prometheus.CounterVec
 	UpstreamRequestDurationSeconds *prometheus.HistogramVec
 	UpstreamErrorsTotal            *prometheus.CounterVec
 }
 
-func New() *Metrics {
+func New(version, commit string) *Metrics {
 	registry := prometheus.NewRegistry()
+
+	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "stock_ticker",
+		Name:      "build_info",
+		Help:      "Build information for the stock-ticker service.",
+	}, []string{"version", "commit"})
+	buildInfo.WithLabelValues(version, commit).Set(1)
 
 	m := &Metrics{
 		Registry: registry,
@@ -31,13 +36,13 @@ func New() *Metrics {
 			Namespace: "stock_ticker",
 			Name:      "ticker_requests_total",
 			Help:      "Total number of stock ticker API requests.",
-		}, []string{"endpoint", "status"}),
-		TickerRequestDurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		}, []string{"status"}),
+		TickerRequestDurationSeconds: prometheus.NewHistogram(prometheus.HistogramOpts{
 			Namespace: "stock_ticker",
 			Name:      "ticker_request_duration_seconds",
 			Help:      "Latency of stock ticker API requests.",
 			Buckets:   prometheus.DefBuckets,
-		}, []string{"endpoint", "status"}),
+		}),
 		TickerErrorsTotal: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: "stock_ticker",
 			Name:      "ticker_errors_total",
@@ -51,9 +56,9 @@ func New() *Metrics {
 		UpstreamRequestDurationSeconds: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: "stock_ticker",
 			Name:      "upstream_request_duration_seconds",
-			Help:      "Latency of Alpha Vantage requests by outcome.",
-			Buckets:   prometheus.DefBuckets,
-		}, []string{"function", "symbol", "status"}),
+			Help:      "Latency of Alpha Vantage requests.",
+			Buckets:   []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10, 30, 60},
+		}, []string{"function", "symbol"}),
 		UpstreamErrorsTotal: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: "stock_ticker",
 			Name:      "upstream_errors_total",
@@ -64,6 +69,7 @@ func New() *Metrics {
 	registry.MustRegister(
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		buildInfo,
 		m.TickerRequestsTotal,
 		m.TickerRequestDurationSeconds,
 		m.TickerErrorsTotal,
@@ -89,8 +95,8 @@ func (m *Metrics) ObserveTickerRequest(statusCode int, duration time.Duration) {
 	}
 
 	status := strconv.Itoa(statusCode)
-	m.TickerRequestsTotal.WithLabelValues(tickerEndpoint, status).Inc()
-	m.TickerRequestDurationSeconds.WithLabelValues(tickerEndpoint, status).Observe(duration.Seconds())
+	m.TickerRequestsTotal.WithLabelValues(status).Inc()
+	m.TickerRequestDurationSeconds.Observe(duration.Seconds())
 }
 
 func (m *Metrics) IncTickerError(kind string) {
@@ -107,7 +113,7 @@ func (m *Metrics) ObserveUpstreamRequest(function, symbol, status string, durati
 	}
 
 	m.UpstreamRequestsTotal.WithLabelValues(function, symbol, status).Inc()
-	m.UpstreamRequestDurationSeconds.WithLabelValues(function, symbol, status).Observe(duration.Seconds())
+	m.UpstreamRequestDurationSeconds.WithLabelValues(function, symbol).Observe(duration.Seconds())
 }
 
 func (m *Metrics) IncUpstreamError(function, symbol, kind string) {

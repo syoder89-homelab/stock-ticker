@@ -65,7 +65,7 @@ func (c *Client) FetchDailyTimeSeries(function, symbol string) (*DailyTSResponse
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		status = fmt.Sprintf("http_%d", resp.StatusCode)
+		status = httpStatusClass(resp.StatusCode)
 		c.metrics.IncUpstreamError(function, symbol, "http_status")
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
@@ -100,4 +100,19 @@ func (c *Client) FetchDailyTimeSeries(function, symbol string) (*DailyTSResponse
 	}
 
 	return &result, nil
+}
+
+func httpStatusClass(code int) string {
+	switch {
+	case code >= 200 && code < 300:
+		return "2xx"
+	case code >= 300 && code < 400:
+		return "3xx"
+	case code >= 400 && code < 500:
+		return "4xx"
+	case code >= 500 && code < 600:
+		return "5xx"
+	default:
+		return "other"
+	}
 }

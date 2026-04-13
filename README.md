@@ -33,10 +33,14 @@ All configuration is via environment variables:
 
 ```bash
 # Build locally
-go build -o stock-ticker ./cmd/stock-ticker
+go build -ldflags "-X main.version=dev -X main.commit=$(git rev-parse --short HEAD)" \
+    -o stock-ticker ./cmd/stock-ticker
 
 # Build container image
-docker build -t stock-ticker .
+docker build \
+    --build-arg VERSION=dev \
+    --build-arg COMMIT=$(git rev-parse --short HEAD) \
+    -t stock-ticker .
 ```
 
 ## Running Locally

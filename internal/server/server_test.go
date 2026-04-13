@@ -14,7 +14,7 @@ import (
 func TestBuildMuxServesMetrics(t *testing.T) {
 	t.Parallel()
 
-	m := metrics.New()
+	m := metrics.New("test", "test")
 	m.IncTickerError("test")
 	s := New(":8080", nil, m, logging.New("ERROR"))
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)

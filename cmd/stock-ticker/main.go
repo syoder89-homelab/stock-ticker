@@ -11,10 +11,15 @@ import (
 	"stock-ticker/internal/server"
 )
 
+var (
+	version = "dev"
+	commit  = "unknown"
+)
+
 func main() {
 	cfg := config.LoadFromEnv()
 	logger := logging.New(cfg.LogLevel)
-	appMetrics := metrics.New()
+	appMetrics := metrics.New(version, commit)
 
 	client := alphavantage.NewClient(cfg.QuoteServiceURL, cfg.APIKey, logger, appMetrics)
 
