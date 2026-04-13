@@ -1,50 +1,53 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: stock-ticker
-  namespace: stock-ticker
+  name: {{ .Release.Name }}
+  annotations:
+    operator.1password.io/auto-restart: "true"
   labels:
-    app: stock-ticker
+    app: {{ .Release.Name }}
 spec:
   replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
+      maxUnavailable: {{ .Values.strategy.maxUnavailable }}
+      maxSurge: {{ .Values.strategy.maxSurge }}
   selector:
     matchLabels:
-      app: stock-ticker
+      app: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: stock-ticker
+        app: {{ .Release.Name }}
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
-        prometheus.io/path: "/metrics"
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65532
-        runAsGroup: 65532
-        fsGroup: 65532
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
       containers:
-      - name: stock-ticker
-        image: us-central1-docker.pkg.dev/personal-356214/stock-ticker/stock-ticker:latest
+      - name: {{ .Release.Name }}
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         imagePullPolicy: IfNotPresent
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
         envFrom:
         - configMapRef:
-            name: stock-ticker
+            name: {{ .Release.Name }}
         env:
         - name: API_KEY
           valueFrom:
             secretKeyRef:
-              name: stock-ticker-api-key
-              key: API_KEY
+              name: stock-ticker-api-credentials
+              key: credential
+        - name: GOMEMLIMIT
+          valueFrom:
+            resourceFieldRef:
+              resource: requests.memory
         ports:
         - name: http
           containerPort: 8080
@@ -67,8 +70,5 @@ spec:
           periodSeconds: 10
           failureThreshold: 3
         resources:
-          requests:
-            cpu: 10m
-            memory: 32Mi
-          limits:
-            memory: 64Mi
+          {{- toYaml .Values.resources | nindent 10 }}
+
