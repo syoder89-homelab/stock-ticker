@@ -17,7 +17,11 @@ var (
 )
 
 func main() {
-	cfg := config.LoadFromEnv()
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		// All individual config errors logged are logged in the config package
+		log.Fatalf("Failed to load configuration!")
+	}
 	logger := logging.New(cfg.LogLevel)
 
 	var appMetrics *metrics.Metrics

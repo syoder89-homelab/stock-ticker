@@ -1,6 +1,9 @@
 package config
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestLoadFromEnvDefaults(t *testing.T) {
 	t.Setenv("QUOTE_SERVICE_URL", "")
@@ -13,7 +16,10 @@ func TestLoadFromEnvDefaults(t *testing.T) {
 	t.Setenv("LOG_LEVEL", "")
 	t.Setenv("DISABLE_METRICS", "")
 
-	cfg := LoadFromEnv()
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	if cfg.QuoteServiceURL != "https://www.alphavantage.co/query" {
 		t.Fatalf("unexpected QuoteServiceURL: %q", cfg.QuoteServiceURL)
@@ -52,7 +58,10 @@ func TestLoadFromEnvOverrides(t *testing.T) {
 	t.Setenv("LOG_LEVEL", "INFO")
 	t.Setenv("DISABLE_METRICS", "true")
 
-	cfg := LoadFromEnv()
+	cfg, err := LoadFromEnv()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	if cfg.QuoteServiceURL != "http://localhost:9090/query" {
 		t.Fatalf("unexpected QuoteServiceURL: %q", cfg.QuoteServiceURL)
@@ -83,12 +92,15 @@ func TestLoadFromEnvOverrides(t *testing.T) {
 	}
 }
 
-func TestLoadFromEnvIgnoresInvalidNDays(t *testing.T) {
+func TestLoadFromEnvInvalidNDays(t *testing.T) {
 	t.Setenv("NDAYS", "not-a-number")
 
-	cfg := LoadFromEnv()
+	_, err := LoadFromEnv()
 
-	if cfg.NDays != 7 {
-		t.Fatalf("expected default NDays 7, got %d", cfg.NDays)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "Invalid (integer) NDAYS value") {
+		t.Fatalf("unexpected error message: %v", err)
 	}
 }
